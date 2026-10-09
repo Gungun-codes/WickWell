@@ -1,0 +1,192 @@
+/* Hero candle animation. All sizes use --u (= 1/1000 of the photo width) so effects scale with the image. */
+
+.hero-fx { position: absolute; pointer-events: none; }
+.hero-fx > * { position: absolute; }
+.hero-glow-wide, .hero-glow-core, .hero-flame { position: absolute; }
+
+/* ── glow that breathes like light thrown by a real flame ── */
+.hero-glow-wide {
+  width: calc(var(--u) * 640); aspect-ratio: 1;
+  background: radial-gradient(circle, rgb(255 168 70 / .5) 0%, rgb(255 120 40 / .22) 28%, transparent 62%);
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+  animation: hero-flicker 3.6s infinite ease-in-out;
+}
+.hero-glow-core {
+  width: calc(var(--u) * 120); aspect-ratio: 1;
+  background: radial-gradient(circle, rgb(255 226 150 / .85) 0%, rgb(255 170 70 / .35) 40%, transparent 70%);
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+  animation: hero-flicker-fast 1.1s infinite ease-in-out;
+}
+@keyframes hero-flicker {
+  0%, 100% { opacity: .92; transform: translate(-50%, -50%) scale(1); }
+  9%  { opacity: .76; transform: translate(-50%, -50%) scale(.97); }
+  18% { opacity: .98; transform: translate(-50%, -50%) scale(1.03); }
+  33% { opacity: .84; transform: translate(-50%, -50%) scale(.985); }
+  47% { opacity: 1;   transform: translate(-50%, -50%) scale(1.045); }
+  60% { opacity: .78; transform: translate(-50%, -50%) scale(.975); }
+  74% { opacity: .95; transform: translate(-50%, -50%) scale(1.02); }
+  87% { opacity: .82; transform: translate(-50%, -50%) scale(.99); }
+}
+@keyframes hero-flicker-fast {
+  0%, 100% { opacity: .9;  transform: translate(-50%, -50%) scale(1); }
+  20% { opacity: .65; transform: translate(-50%, -50%) scale(.94); }
+  45% { opacity: 1;   transform: translate(-50%, -50%) scale(1.08); }
+  70% { opacity: .72; transform: translate(-50%, -50%) scale(.97); }
+}
+
+/* ── the flame itself, sways and stretches from the wick ── */
+.hero-flame {
+  width: calc(var(--u) * 15); height: calc(var(--u) * 34);
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  mix-blend-mode: screen;
+  animation: hero-sway 2.7s infinite ease-in-out;
+}
+@keyframes hero-sway {
+  0%, 100% { transform: translate(-50%, -100%) rotate(0) scaleY(1); }
+  15% { transform: translate(-50%, -100%) rotate(-2.2deg) scaleY(1.07); }
+  32% { transform: translate(-50%, -100%) rotate(1.6deg) scaleY(.94); }
+  50% { transform: translate(-50%, -100%) rotate(-1deg) scaleY(1.1); }
+  68% { transform: translate(-50%, -100%) rotate(2.4deg) scaleY(.96); }
+  84% { transform: translate(-50%, -100%) rotate(-1.4deg) scaleY(1.04); }
+}
+
+/* ── embers lifting off the flame ── */
+.hero-ember {
+  width: calc(var(--u) * var(--s)); aspect-ratio: 1; border-radius: 50%;
+  background: rgb(255 196 110);
+  box-shadow: 0 0 calc(var(--u) * 6) calc(var(--u) * 1.5) rgb(255 140 50 / .75);
+  opacity: 0;
+  animation: hero-ember var(--dur) var(--delay) infinite ease-out;
+}
+@keyframes hero-ember {
+  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+  12%  { opacity: 1; }
+  55%  { transform: translate(calc(var(--sx) * var(--u) * .4), calc(var(--rise) * var(--u) * -.55)) scale(.8); }
+  100% { opacity: 0; transform: translate(calc(var(--sx) * var(--u)), calc(var(--rise) * var(--u) * -1)) scale(.15); }
+}
+
+/* ── dust drifting through the light ── */
+.hero-mote {
+  width: calc(var(--u) * var(--s)); aspect-ratio: 1; border-radius: 50%;
+  background: rgb(255 226 180);
+  opacity: 0;
+  animation: hero-mote var(--dur) var(--delay) infinite ease-in-out;
+}
+@keyframes hero-mote {
+  0%   { opacity: 0; transform: translate(0, 0); }
+  20%  { opacity: .65; }
+  50%  { opacity: .25; transform: translate(calc(var(--u) * 14), calc(var(--u) * -22)); }
+  80%  { opacity: .6; }
+  100% { opacity: 0; transform: translate(calc(var(--u) * -10), calc(var(--u) * -48)); }
+}
+
+/* ── smoke when the candle is blown out ── */
+.hero-smoke {
+  width: calc(var(--u) * 26); height: calc(var(--u) * 70); border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(220 205 195 / .55), transparent 70%);
+  filter: blur(calc(var(--u) * 4));
+  opacity: 0;
+  animation: hero-smoke 3.4s var(--delay) forwards ease-out;
+}
+@keyframes hero-smoke {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(.4); }
+  15%  { opacity: .75; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--sx) * var(--u)), calc(var(--rise) * var(--u) * -1)) scale(2.6); }
+}
+
+/* ── slow "breathing" push-in on the whole photo, anchored on the flame ── */
+.hero-breathe { animation: hero-breathe 16s infinite alternate ease-in-out; }
+@keyframes hero-breathe { from { transform: scale(1); } to { transform: scale(1.035); } }
+
+/* ── text reveal, timed to land as the candle catches ── */
+.hero-rise { animation: hero-rise .95s cubic-bezier(.2, .7, .2, 1) var(--d, 0s) both; }
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-fade { animation: hero-fade 1.2s ease-out var(--d, 0s) both; }
+@keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ───────── Headline: word-by-word reveal, "you." lit by the candle ───────── */
+.hero-title { text-shadow: 0 2px 28px rgb(0 0 0 / .45); letter-spacing: -0.02em; }
+.hero-word {
+  display: inline-block;
+  animation: hero-rise .9s cubic-bezier(.2, .7, .2, 1) var(--d, 0s) both;
+}
+.hero-title em {
+  display: inline-block; font-style: italic; font-weight: 500;
+  padding-right: .08em; /* italic overhang would clip the gradient */
+  background: linear-gradient(100deg, #ffe7bf 0%, #ffbf70 45%, #ff8d4a 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 18px rgb(255 150 70 / .5));
+  animation:
+    hero-rise .9s cubic-bezier(.2, .7, .2, 1) var(--d, 0s) both,
+    hero-text-glow 3.6s 2.4s infinite ease-in-out;
+}
+@keyframes hero-text-glow {
+  0%, 100% { filter: drop-shadow(0 0 16px rgb(255 150 70 / .45)); }
+  9%  { filter: drop-shadow(0 0 8px rgb(255 150 70 / .25)); }
+  18% { filter: drop-shadow(0 0 22px rgb(255 160 80 / .6)); }
+  47% { filter: drop-shadow(0 0 26px rgb(255 160 80 / .65)); }
+  60% { filter: drop-shadow(0 0 10px rgb(255 150 70 / .3)); }
+  74% { filter: drop-shadow(0 0 20px rgb(255 160 80 / .55)); }
+}
+
+/* ───────── Rotating mood line ───────── */
+.hero-rotor { display: grid; }
+.hero-rotor > span {
+  grid-area: 1 / 1;
+  opacity: 0; transform: translateY(10px); filter: blur(4px);
+  transition: opacity .6s ease, transform .6s ease, filter .6s ease;
+}
+.hero-rotor > span[data-on="true"] { opacity: 1; transform: none; filter: none; }
+
+/* ───────── Buttons ───────── */
+.hero-cta, .hero-cta-ghost {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+  min-height: 3.1rem; padding: 0 1.7rem; border-radius: 999px;
+  font-size: .95rem; font-weight: 500; white-space: nowrap;
+  transition: transform .25s ease, box-shadow .3s ease, background-color .25s ease, color .25s ease;
+}
+.hero-cta {
+  overflow: hidden; color: #fff4e6;
+  background: linear-gradient(135deg, #c22f45 0%, #8c1d2e 55%, #6f1624 100%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 190 150 / .28),
+    inset 0 1px 0 rgb(255 255 255 / .18),
+    0 10px 30px -8px rgb(255 110 60 / .5);
+  animation: hero-cta-halo 3.2s infinite ease-in-out;
+}
+.hero-cta::before { /* light sweep, like flame glinting on glass */
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / .3) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform .8s ease;
+}
+.hero-cta:hover { transform: translateY(-2px) scale(1.02); }
+.hero-cta:hover::before { transform: translateX(120%); }
+.hero-cta:active { transform: translateY(0) scale(.98); }
+.hero-cta .arrow { transition: transform .25s ease; }
+.hero-cta:hover .arrow { transform: translateX(5px); }
+.hero-cta .spark { color: #ffd9a0; }
+@keyframes hero-cta-halo {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgb(255 190 150 / .28), inset 0 1px 0 rgb(255 255 255 / .18), 0 10px 28px -8px rgb(255 110 60 / .4); }
+  50%      { box-shadow: inset 0 0 0 1px rgb(255 190 150 / .4),  inset 0 1px 0 rgb(255 255 255 / .18), 0 12px 38px -6px rgb(255 120 60 / .75); }
+}
+
+.hero-cta-ghost {
+  color: #fff4e6;
+  background: rgb(255 255 255 / .07);
+  box-shadow: inset 0 0 0 1px rgb(255 235 220 / .45);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.hero-cta-ghost:hover {
+  transform: translateY(-2px);
+  background: #fdf6f1; color: #241210;
+  box-shadow: inset 0 0 0 1px #fdf6f1, 0 10px 30px -10px rgb(255 235 220 / .5);
+}
+.hero-cta-ghost:active { transform: translateY(0) scale(.98); }
+.hero-cta:focus-visible, .hero-cta-ghost:focus-visible { outline: 2px solid #ffd9a0; outline-offset: 3px; }
