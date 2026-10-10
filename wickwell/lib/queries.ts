@@ -38,9 +38,9 @@ export async function getBestSellers(limit = 4) {
   return withRatings(data ?? []);
 }
 
-export type ShopFilters = { mood?: string; occasion?: string; sort?: string; q?: string };
+export type ShopFilters = { mood?: string; occasion?: string; category?: string; sort?: string; q?: string };
 
-export async function getProducts({ mood, occasion, sort, q }: ShopFilters = {}) {
+export async function getProducts({ mood, occasion, category, sort, q }: ShopFilters = {}) {
   let ids: string[] | null = null;
 
   if (mood) {
@@ -53,6 +53,12 @@ export async function getProducts({ mood, occasion, sort, q }: ShopFilters = {})
       .from("product_occasions").select("product_id, occasions!inner(slug)").eq("occasions.slug", occasion);
     const occ = (data ?? []).map((r: any) => r.product_id);
     ids = ids ? ids.filter((i) => occ.includes(i)) : occ;
+  }
+  if (category) {
+    const { data } = await supabase
+      .from("product_categories").select("product_id, categories!inner(slug)").eq("categories.slug", category);
+    const cat = (data ?? []).map((r: any) => r.product_id);
+    ids = ids ? ids.filter((i) => cat.includes(i)) : cat;
   }
   if (ids && ids.length === 0) return [];
 
@@ -141,5 +147,11 @@ export async function getTopReviews(limit = 4) {
     .not("body", "is", null)
     .order("created_at", { ascending: false })
     .limit(limit);
+  return data ?? [];
+}
+
+
+export async function getCategories() {
+  const { data } = await supabase.from("categories").select("slug, name, image_id").order("sort_order");
   return data ?? [];
 }

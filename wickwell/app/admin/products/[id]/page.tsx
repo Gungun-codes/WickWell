@@ -41,17 +41,20 @@ export default function ProductEditor() {
   const [occasions, setOccasions] = useState<Opt[]>([]);
   const [moodWeights, setMoodWeights] = useState<Record<string, number>>({});
   const [occSel, setOccSel] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Opt[]>([]);
+  const [catSel, setCatSel] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
-      const [m, o] = await Promise.all([
+      const [m, o, c] = await Promise.all([
         supabase.from("moods").select("id, slug, name").order("sort_order"),
         supabase.from("occasions").select("id, slug, name").order("sort_order"),
+        supabase.from("categories").select("id, slug, name").order("sort_order"),
       ]);
-      setMoods((m.data as Opt[]) ?? []); setOccasions((o.data as Opt[]) ?? []);
+      setMoods((m.data as Opt[]) ?? []); setOccasions((o.data as Opt[]) ?? []); setCategories((c.data as Opt[]) ?? []);
       if (isNew) return;
       const { data: p } = await supabase.from("products")
-        .select("*, variants(id, size_label, price_paise, stock), product_moods(mood_id, weight), product_occasions(occasion_id)")
+        .select("*, variants(id, size_label, price_paise, stock), product_moods(mood_id, weight), product_occasions(occasion_id), product_categories(category_id)")
         .eq("id", id).maybeSingle();
       if (!p) { setMsg({ type: "err", text: "Product not found." }); setLoading(false); return; }
       setName(p.name); setSlug(p.slug); setSlugTouched(true);
@@ -64,6 +67,7 @@ export default function ProductEditor() {
       })));
       setMoodWeights(Object.fromEntries((p.product_moods ?? []).map((x: any) => [x.mood_id, x.weight])));
       setOccSel((p.product_occasions ?? []).map((x: any) => x.occasion_id));
+      setCatSel((p.product_categories ?? []).map((x: any) => x.category_id));
       setLoading(false);
     })();
   }, [id, isNew]);
@@ -118,6 +122,9 @@ export default function ProductEditor() {
 
       await supabase.from("product_occasions").delete().eq("product_id", pid);
       if (occSel.length) { const { error } = await supabase.from("product_occasions").insert(occSel.map((occasion_id) => ({ product_id: pid, occasion_id }))); if (error) throw error; }
+
+      await supabase.from("product_categories").delete().eq("product_id", pid);
+      if (catSel.length) { const { error } = await supabase.from("product_categories").insert(catSel.map((category_id) => ({ product_id: pid, category_id }))); if (error) throw error; }
 
       await revalidateStore();
       setMsg({ type: "ok", text: "Saved. It is live on the store now." });
@@ -201,6 +208,22 @@ export default function ProductEditor() {
           <label htmlFor="burn" className={label}>Burn time (hours)</label>
           <input id="burn" value={burn} inputMode="numeric" className={`${input} max-w-32`} onChange={(e) => setBurn(e.target.value)} />
         </div>
+      </section>
+
+      <section className={`${section} space-y-3`}>
+        <h2 className="text-2xl">Where it appears in the shop</h2>
+        <fieldset>
+          <legend className={label}>Categories</legend>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <label key={c.id} className="cursor-pointer">
+                <input type="checkbox" className="peer sr-only" checked={catSel.includes(c.id)} onChange={() => setCatSel((x) => (x.includes(c.id) ? x.filter((y) => y !== c.id) : [...x, c.id]))} />
+                <span className="inline-flex min-h-10 items-center rounded-full border border-cocoa-900/15 px-4 text-sm peer-checked:border-wine-600 peer-checked:bg-wine-600 peer-checked:text-cream-50 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-wine-600">{c.name}</span>
+              </label>
+            ))}
+            {categories.length === 0 && <p className="text-sm text-cocoa-600">No categories yet. Add them in the Categories &amp; occasions tab.</p>}
+          </div>
+        </fieldset>
       </section>
 
       <section className={`${section} space-y-3`}>

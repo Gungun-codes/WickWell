@@ -34,6 +34,14 @@ export default function AdminProducts() {
     load();
   }
 
+  async function remove(r: Row) {
+    if (!confirm(`Delete "${r.name}" permanently?\n\nIts sizes, reviews and cart entries are deleted too. Past orders keep their record. If you only want to stop selling it, use Hide instead.`)) return;
+    const { error } = await supabase.from("products").delete().eq("id", r.id);
+    if (error) { setError(error.message); return; }
+    await revalidateStore();
+    load();
+  }
+
   return (
     <>
       <div className="flex items-center justify-between gap-3">
@@ -67,6 +75,7 @@ export default function AdminProducts() {
                   <div className="mt-2 flex gap-2">
                     <Link href={`/admin/products/${r.id}`} className="btn-ghost min-h-10 px-4 text-sm">Edit</Link>
                     <button onClick={() => toggle(r)} className="btn-ghost min-h-10 px-4 text-sm">{r.is_active ? "Hide" : "Show"}</button>
+                    <button onClick={() => remove(r)} className="btn-ghost min-h-10 px-4 text-sm text-wine-700">Delete</button>
                   </div>
                 </div>
               </li>

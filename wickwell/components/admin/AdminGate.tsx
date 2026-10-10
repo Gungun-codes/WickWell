@@ -55,6 +55,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     <div className="container-lume py-8 md:py-12">
       <div className="flex flex-wrap items-center gap-2">
         {tab("/admin", "Products", path === "/admin" || path.startsWith("/admin/products"))}
+        {tab("/admin/collections", "Categories & occasions", path.startsWith("/admin/collections"))}
         {tab("/admin/reviews", "Reviews", path.startsWith("/admin/reviews"))}
         <Link href="/" className="ml-auto text-sm text-wine-600 hover:underline">View store →</Link>
       </div>
