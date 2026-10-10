@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/app/shop/[slug]/page.tsx  (replace/create this file in your project)
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -5,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Clock, Leaf, Flame, Star } from "lucide-react";
 import { AddToCart } from "@/components/AddToCart";
 import { ProductCard } from "@/components/ProductCard";
+import { ReviewForm } from "@/components/ReviewForm";
 import { productImage } from "@/lib/images";
 import { getProductBySlug, getRelated, getReviews } from "@/lib/queries";
 
@@ -29,7 +31,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   return (
     <main className="container-lume py-8 md:py-12">
-      <Link href="/shop" className="text-sm text-wine-600 hover:underline">← All candles</Link>
+      <Link href="/shop" className="-ml-2 inline-flex min-h-11 items-center px-2 text-sm text-wine-600 hover:underline">← All candles</Link>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-2">
         <div className="space-y-3">
@@ -82,12 +84,14 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 </p>
                 {r.title && <p className="mt-2 text-sm font-medium">{r.title}</p>}
                 {r.body && <p className="mt-1 text-sm text-cocoa-600">{r.body}</p>}
+                <p className="mt-3 text-xs text-cocoa-600">{r.reviewer_name || "Customer"} · Verified buyer</p>
               </li>
             ))}
           </ul>
         ) : (
           <p className="mt-3 text-sm text-cocoa-600">No reviews yet. Order this candle and be the first to review it.</p>
         )}
+        <ReviewForm productId={p.id} />
       </section>
 
       {related.length > 0 && (

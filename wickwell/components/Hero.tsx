@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/Hero.tsx  (replace/create this file in your project)
 import Link from "next/link";
 import { Leaf, Clock, Flame, Heart, Sparkles, ArrowRight } from "lucide-react";
 import { HeroScene } from "./HeroScene";
@@ -25,14 +26,14 @@ function Words({ text, start }: { text: string; start: number }) {
 
 export function Hero() {
   return (
-    <section className="relative isolate min-h-[720px] overflow-hidden bg-cocoa-900 text-cream-50 md:min-h-[600px]">
+    <section className="relative isolate min-h-[840px] overflow-hidden bg-cocoa-900 text-cream-50 md:min-h-[600px]">
       <HeroScene />
 
       {/* keeps text readable over the photo */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-cocoa-900/85 via-cocoa-900/40 to-transparent" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-cocoa-900/90 via-transparent to-transparent md:hidden" />
+      <div className="absolute inset-0 -z-10 hidden bg-gradient-to-r from-cocoa-900/85 via-cocoa-900/40 to-transparent md:block" />
+      
 
-      <div className="container-lume flex min-h-[720px] flex-col justify-end pb-28 pt-24 md:min-h-[600px] md:justify-center">
+      <div className="container-lume flex min-h-[840px] flex-col justify-end pb-28 pt-24 md:min-h-[600px] md:justify-center">
         <h1 className="hero-title max-w-xl text-5xl leading-[1.02] sm:text-6xl md:text-7xl">
           <span className="block"><Words text="Scents that" start={0.9} /></span>
           <span className="block">

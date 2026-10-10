@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/app/cart/page.tsx  (replace/create this file in your project)
 "use client";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,7 +27,7 @@ export default function CartPage() {
   }
 
   return (
-    <main className="container-lume py-10 md:py-14">
+    <main className="container-lume py-10 pb-28 md:py-14 md:pb-14">
       <h1 className="text-4xl sm:text-5xl">Your bag</h1>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.5fr_1fr]">
@@ -46,11 +47,11 @@ export default function CartPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center rounded-md border border-cocoa-900/15">
-                    <button aria-label={`Decrease ${l.name} quantity`} className="p-2" onClick={() => setQty(l.variantId, l.qty - 1)}><Minus size={14} /></button>
-                    <span className="w-7 text-center text-sm">{l.qty}</span>
-                    <button aria-label={`Increase ${l.name} quantity`} className="p-2" onClick={() => setQty(l.variantId, l.qty + 1)}><Plus size={14} /></button>
+                    <button aria-label={`Decrease ${l.name} quantity`} className="grid size-10 place-items-center" onClick={() => setQty(l.variantId, l.qty - 1)}><Minus size={14} /></button>
+                    <span className="w-6 text-center text-sm">{l.qty}</span>
+                    <button aria-label={`Increase ${l.name} quantity`} className="grid size-10 place-items-center" onClick={() => setQty(l.variantId, l.qty + 1)}><Plus size={14} /></button>
                   </div>
-                  <button aria-label={`Remove ${l.name}`} className="p-2 text-cocoa-600 hover:text-wine-600" onClick={() => remove(l.variantId)}><Trash2 size={16} /></button>
+                  <button aria-label={`Remove ${l.name}`} className="grid size-10 place-items-center text-cocoa-600 hover:text-wine-600" onClick={() => remove(l.variantId)}><Trash2 size={16} /></button>
                 </div>
               </div>
             </li>
@@ -71,8 +72,13 @@ export default function CartPage() {
           <div className="mt-5 flex justify-between border-t border-cocoa-900/10 pt-4 font-medium">
             <span>Total</span><span>{rupees(subtotalPaise + shipping)}</span>
           </div>
-          <Link href="/checkout" className="btn-primary mt-6 w-full">Checkout</Link>
+          <Link href="/checkout" className="btn-primary mt-6 hidden w-full md:inline-flex">Checkout</Link>
         </aside>
+      </div>
+
+      {/* phones: always-visible checkout bar, sits above the tab bar */}
+      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-blush-200 bg-cream-50/95 p-3 pb-3 backdrop-blur md:hidden">
+        <Link href="/checkout" className="btn-primary w-full min-h-12">Checkout · {rupees(subtotalPaise + shipping)}</Link>
       </div>
     </main>
   );

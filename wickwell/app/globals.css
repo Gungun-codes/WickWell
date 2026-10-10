@@ -48,11 +48,11 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-wine-600 px-5 py-2.5
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-wine-600 px-5 py-2.5
            text-sm font-medium text-cream-50 transition-colors hover:bg-wine-700;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-current
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-current
            px-5 py-2.5 text-sm font-medium transition-colors hover:bg-black/5;
   }
   .mood-arch {

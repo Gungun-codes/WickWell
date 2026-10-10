@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/app/shop/page.tsx  (replace/create this file in your project)
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
@@ -21,7 +22,7 @@ function href(sp: SP, patch: Partial<SP>) {
 }
 
 const chip = (active: boolean) =>
-  `rounded-full border px-3.5 py-1.5 text-sm transition ${
+  `inline-flex min-h-10 shrink-0 snap-start items-center rounded-full border px-4 text-sm transition ${
     active ? "border-wine-600 bg-wine-600 text-cream-50" : "border-cocoa-900/15 hover:border-wine-600 hover:text-wine-600"
   }`;
 
@@ -39,7 +40,7 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
       <div className="mt-8 space-y-4">
         <div>
           <p className="mb-2 text-sm font-medium">Mood</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             <Link href={href(searchParams, { mood: undefined })} className={chip(!searchParams.mood)}>All</Link>
             {moods.map((m) => (
               <Link key={m.slug} href={href(searchParams, { mood: m.slug })} className={chip(searchParams.mood === m.slug)}>
@@ -50,7 +51,7 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
         </div>
         <div>
           <p className="mb-2 text-sm font-medium">Occasion</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             <Link href={href(searchParams, { occasion: undefined })} className={chip(!searchParams.occasion)}>Any</Link>
             {occasions.map((o) => (
               <Link key={o.slug} href={href(searchParams, { occasion: o.slug })} className={chip(searchParams.occasion === o.slug)}>
@@ -61,7 +62,7 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
         </div>
         <div>
           <p className="mb-2 text-sm font-medium">Sort by</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             {sorts.map((s) => (
               <Link key={s.value} href={href(searchParams, { sort: s.value })} className={chip((searchParams.sort ?? "new") === s.value)}>
                 {s.label}

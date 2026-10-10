@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/HeroScene.tsx  (replace/create this file in your project)
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -8,7 +9,9 @@ import "./hero.css";
    If you swap the hero image, update these four numbers. */
 const IMG_W = 1774;
 const IMG_H = 887;
-const POS_X = 0.7; // must match object-position below
+const POS_X = 0.7;        // desktop object-position (md and up)
+const POS_X_MOBILE = 0.9; // phones; keep in sync with the object-[90%_50%] class
+const MOBILE_MAX = 768;
 const POS_Y = 0.5;
 const FLAME_X = 0.746;
 const WICK_Y = 0.437; // base of flame
@@ -51,12 +54,19 @@ export function HeroScene() {
       const W = el.clientWidth, H = el.clientHeight;
       const s = Math.max(W / IMG_W, H / IMG_H);
       const w = IMG_W * s, h = IMG_H * s;
-      setRect({ left: (W - w) * POS_X, top: (H - h) * POS_Y, w, h });
+      const px = W < MOBILE_MAX ? POS_X_MOBILE : POS_X;
+      setRect({ left: (W - w) * px, top: (H - h) * POS_Y, w, h });
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // The candle catches a moment after load.
+  useEffect(() => {
+    const t = setTimeout(() => setState("lit"), 450);
+    return () => clearTimeout(t);
   }, []);
 
   const lit = state === "lit";
@@ -65,7 +75,10 @@ export function HeroScene() {
 
   return (
     <>
-      <div ref={box} className="absolute inset-0 -z-10 overflow-hidden">
+      <div
+        ref={box}
+        className="absolute inset-x-0 top-0 -z-10 h-[460px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_72%,transparent)] md:inset-0 md:h-auto md:[mask-image:none]"
+      >
         {/* Photo + effects share one layer that breathes around the flame, so they never drift apart. */}
         <div
           className="hero-breathe absolute inset-0"
@@ -77,8 +90,7 @@ export function HeroScene() {
             fill
             priority
             sizes="100vw"
-            className="object-cover opacity-90"
-            style={{ objectPosition: `${POS_X * 100}% ${POS_Y * 100}%` }}
+            className="object-cover object-[90%_50%] opacity-90 md:object-[70%_50%]"
           />
           {/* Same photo with the flame removed. Visible before ignition and after blow-out. */}
           <Image
@@ -88,8 +100,8 @@ export function HeroScene() {
             sizes="100vw"
             loading="eager"
             aria-hidden
-            className="object-cover transition-opacity duration-700"
-            style={{ objectPosition: `${POS_X * 100}% ${POS_Y * 100}%`, opacity: lit ? 0 : 0.9 }}
+            className="object-cover object-[90%_50%] transition-opacity duration-700 md:object-[70%_50%]"
+            style={{ opacity: lit ? 0 : 0.9 }}
           />
 
           {rect && (
@@ -170,8 +182,8 @@ export function HeroScene() {
 
       <button
         type="button"
-        onClick={() => setState((current) => current === "lit" ? "out" : "lit")}
-        className="absolute bottom-20 right-4 z-10 inline-flex items-center gap-2 rounded-full border border-white/25 bg-cocoa-900/55 px-4 py-2 text-sm text-cream-50 backdrop-blur transition hover:bg-cocoa-900/75 md:bottom-24 md:right-8"
+        onClick={() => setState((current) => (current === "lit" ? "out" : "lit"))}
+        className="absolute right-4 top-[4.5rem] z-10 inline-flex min-h-10 items-center gap-2 rounded-full border border-white/25 bg-cocoa-900/55 px-3.5 text-xs text-cream-50 backdrop-blur transition hover:bg-cocoa-900/75 md:bottom-24 md:right-8 md:top-auto md:px-4 md:text-sm"
       >
         <Flame size={16} className={lit ? "text-gold-400" : "opacity-60"} aria-hidden />
         {lit ? "Blow out the candle" : "Light the candle"}

@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/QuickAdd.tsx  (replace/create this file in your project)
 "use client";
 import { useState } from "react";
 import { ShoppingBag, Check } from "lucide-react";
@@ -25,7 +26,7 @@ export function QuickAdd({ p }: { p: ProductCardData }) {
         setDone(true);
         setTimeout(() => setDone(false), 1400);
       }}
-      className="grid size-9 place-items-center rounded-md bg-wine-600 text-cream-50 hover:bg-wine-700 disabled:cursor-not-allowed disabled:opacity-40"
+      className="grid size-10 place-items-center rounded-md bg-wine-600 text-cream-50 hover:bg-wine-700 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {done ? <Check size={16} /> : <ShoppingBag size={16} />}
     </button>

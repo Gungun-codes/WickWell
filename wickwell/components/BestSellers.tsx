@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/BestSellers.tsx  (replace/create this file in your project)
 import Link from "next/link";
 import { ProductCard } from "./ProductCard";
 import type { ProductCardData } from "@/lib/queries";
@@ -11,7 +12,7 @@ export function BestSellers({ products }: { products: ProductCardData[] }) {
           <h2 className="text-3xl">Best sellers</h2>
           <p className="mt-1 text-sm text-cocoa-600">Fan favourites, for a reason.</p>
         </div>
-        <Link href="/shop" className="text-sm text-wine-600 underline-offset-4 hover:underline">
+        <Link href="/shop" className="inline-flex min-h-11 items-center text-sm text-wine-600 underline-offset-4 hover:underline">
           View all
         </Link>
       </div>

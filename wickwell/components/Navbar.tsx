@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/Navbar.tsx  (replace/create this file in your project)
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,7 +28,7 @@ export function Navbar() {
       }
     >
       <div className="container-lume flex h-16 items-center justify-between">
-        <Link href="/" className="font-display text-3xl">WickWell</Link>
+        <Link href="/" className="font-display text-3xl leading-none py-2">WickWell</Link>
 
         <nav className="hidden gap-8 text-sm md:flex" aria-label="Main">
           {links.map((l) => {
@@ -45,13 +46,13 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-4">
-          <Link href="/search" aria-label="Search"><Search size={20} /></Link>
-          <Link href="/account" aria-label="Account" className="hidden md:block"><User size={20} /></Link>
-          <Link href="/cart" aria-label={`Cart${ready && count ? `, ${count} items` : ""}`} className="relative">
+        <div className="-mr-2 flex items-center gap-1">
+          <Link href="/search" aria-label="Search" className="grid size-11 place-items-center"><Search size={20} /></Link>
+          <Link href="/account" aria-label="Account" className="hidden size-11 place-items-center md:grid"><User size={20} /></Link>
+          <Link href="/cart" aria-label={`Cart${ready && count ? `, ${count} items` : ""}`} className="relative grid size-11 place-items-center">
             <ShoppingBag size={20} />
             {ready && count > 0 && (
-              <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full bg-wine-600 text-[10px] font-medium text-cream-50">
+              <span className="absolute right-1 top-1 grid size-4 place-items-center rounded-full bg-wine-600 text-[10px] font-medium text-cream-50">
                 {count}
               </span>
             )}

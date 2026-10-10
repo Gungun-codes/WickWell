@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/lib/queries.ts  (replace/create this file in your project)
 import { supabase } from "./supabase";
 
 export type Variant = { id: string; size_label: string; price_paise: number; stock: number };
@@ -82,7 +83,7 @@ export async function getProductBySlug(slug: string) {
 
 export async function getReviews(productId: string) {
   const { data } = await supabase
-    .from("reviews").select("id, rating, title, body, created_at")
+    .from("reviews").select("id, rating, title, body, reviewer_name, created_at")
     .eq("product_id", productId).order("created_at", { ascending: false }).limit(10);
   return data ?? [];
 }
@@ -129,4 +130,16 @@ export async function getMatches(mood: string, families: string[], limit = 3) {
 
   if (scored.length) return withRatings(scored);
   return getBestSellers(limit);
+}
+
+/** Latest genuine 4 and 5 star reviews, for the home page. */
+export async function getTopReviews(limit = 4) {
+  const { data } = await supabase
+    .from("reviews")
+    .select("id, rating, title, body, reviewer_name, products(name)")
+    .gte("rating", 4)
+    .not("body", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
 }

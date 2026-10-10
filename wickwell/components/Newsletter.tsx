@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/Newsletter.tsx  (replace/create this file in your project)
 import { supabase } from "@/lib/supabase";
 
 async function subscribe(formData: FormData) {
@@ -24,7 +25,7 @@ export function Newsletter() {
             type="email"
             required
             placeholder="Enter your email"
-            className="min-w-0 flex-1 rounded-md bg-cream-50 px-4 py-2.5 text-sm text-cocoa-900 placeholder:text-cocoa-600"
+            className="min-w-0 flex-1 rounded-md bg-cream-50 px-4 py-3 text-base text-cocoa-900 md:text-sm placeholder:text-cocoa-600"
           />
           <button className="btn-primary bg-rose-400 text-cocoa-900 hover:bg-rose-400/90">Subscribe</button>
         </form>

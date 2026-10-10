@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/components/BottomNav.tsx  (replace/create this file in your project)
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +15,7 @@ const tabs = [
 /** Mobile-only tab bar, as in the reference phone screens. */
 export function BottomNav() {
   const path = usePathname();
+  if (path.startsWith("/checkout") || path.startsWith("/order") || path.startsWith("/admin")) return null;
   return (
     <nav
       aria-label="Tabs"
@@ -26,7 +28,7 @@ export function BottomNav() {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${
+            className={`flex flex-col items-center gap-0.5 min-h-14 justify-center py-2 text-[11px] ${
               active ? "text-wine-600" : "text-cocoa-600"
             }`}
           >

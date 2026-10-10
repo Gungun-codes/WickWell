@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/app/search/page.tsx  (replace/create this file in your project)
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Search } from "lucide-react";
@@ -19,7 +20,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
       <form action="/search" className="mt-6 flex max-w-xl gap-2" role="search">
         <label htmlFor="q" className="sr-only">Search candles</label>
         <input id="q" name="q" defaultValue={q} placeholder="Search by name, scent note or family"
-          className="min-w-0 flex-1 rounded-md border border-cocoa-900/15 bg-white px-4 py-3 text-sm outline-none focus:border-wine-600" />
+          className="min-w-0 flex-1 rounded-md border border-cocoa-900/15 bg-white px-4 py-3 text-base outline-none md:text-sm focus:border-wine-600" />
         <button className="btn-primary" aria-label="Search"><Search size={18} /></button>
       </form>
 

@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/app/account/page.tsx  (replace/create this file in your project)
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -10,7 +11,7 @@ type Order = {
   order_items: { id: string; product_name: string; size_label: string; quantity: number }[];
 };
 
-const field = "w-full rounded-md border border-cocoa-900/15 bg-white px-4 py-3 text-sm outline-none focus:border-wine-600";
+const field = "w-full rounded-md border border-cocoa-900/15 bg-white px-4 py-3 text-base outline-none md:text-sm focus:border-wine-600";
 
 export default function AccountPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -100,7 +101,7 @@ export default function AccountPage() {
         <input name="password" type="password" required minLength={8} autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="Password (8+ characters)" aria-label="Password" className={field} />
         {msg && <p role="alert" className="text-sm text-wine-700">{msg}</p>}
         <button disabled={busy} className="btn-primary w-full disabled:opacity-60">{busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Sign up"}</button>
-        <button type="button" className="w-full text-sm text-wine-600 hover:underline" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMsg(""); }}>
+        <button type="button" className="min-h-11 w-full text-sm text-wine-600 hover:underline" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMsg(""); }}>
           {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>
       </form>

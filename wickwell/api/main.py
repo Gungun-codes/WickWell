@@ -1,5 +1,6 @@
+# FILE PATH: wickwell/api/main.py  (replace/create this file in your project)
 """
-Lumé API — checkout + payments (+ Scent Finder).
+WickWell API — checkout + payments (+ Scent Finder).
 Run:  pip install -r requirements.txt
       uvicorn main:app --reload --port 8000
 
@@ -12,6 +13,7 @@ import hashlib
 import hmac
 import os
 import re
+import time
 
 import razorpay
 from dotenv import load_dotenv
@@ -28,7 +30,7 @@ rzp = razorpay.Client(auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_
 FREE_SHIPPING_ABOVE_PAISE = 99900  # keep in sync with lib/pricing.ts
 SHIPPING_PAISE = 9900
 
-app = FastAPI(title="Lumé API")
+app = FastAPI(title="WickWell API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
@@ -103,15 +105,24 @@ def mark_paid(order: dict, payment_id: str) -> None:
     if not updated:  # another request won the race
         return
     for it in db.table("order_items").select("variant_id, quantity").eq("order_id", order["id"]).execute().data:
+        if it["variant_id"]:
+            db.rpc("decrement_stock", {"p_variant": it["variant_id"], "p_qty": it["quantity"]}).execute()
+
+
+def require_admin(authorization: str | None) -> str:
+    uid = user_id_from_token(authorization)
+    if not uid:
+        raise HTTPException(401, "Sign in required")
+    rows = db.table("profiles").select("is_admin").eq("id", uid).execute().data
+    if not rows or not rows[0]["is_admin"]:
+        raise HTTPException(403, "Admins only")
+    return uid
+
+
 # ───────── Routes ─────────
-        """WickWell API — checkout + payments (+ Scent Finder)."""
-        import hashlib
-        import hmac
-        import os
-        import re
 @app.get("/health")
 def health():
-        app = FastAPI(title="WickWell API")
+    return {"ok": True}
 
 
 @app.post("/orders")
@@ -213,3 +224,21 @@ async def webhook(request: Request, x_razorpay_signature: str = Header(default="
         if rows:
             mark_paid(rows[0], pay["id"])
     return {"ok": True}
+
+
+@app.post("/admin/upload-signature")
+def upload_signature(authorization: str | None = Header(default=None)):
+    """Admin-only. Returns a short-lived signature so the browser can upload a product photo
+    straight to Cloudinary without the API secret ever leaving the server."""
+    require_admin(authorization)
+    folder = "wickwell/products"
+    timestamp = int(time.time())
+    to_sign = f"folder={folder}&timestamp={timestamp}"
+    signature = hashlib.sha1((to_sign + os.environ["CLOUDINARY_API_SECRET"]).encode()).hexdigest()
+    return {
+        "cloud_name": os.environ["CLOUDINARY_CLOUD_NAME"],
+        "api_key": os.environ["CLOUDINARY_API_KEY"],
+        "timestamp": timestamp,
+        "folder": folder,
+        "signature": signature,
+    }

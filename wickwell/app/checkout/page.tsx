@@ -1,3 +1,4 @@
+// FILE PATH: wickwell/app/checkout/page.tsx  (replace/create this file in your project)
 "use client";
 import { useState } from "react";
 import Link from "next/link";
@@ -15,7 +16,7 @@ declare global {
 }
 
 const field =
-  "w-full rounded-md border border-cocoa-900/15 bg-white px-4 py-3 text-sm outline-none focus:border-wine-600";
+  "w-full rounded-md border border-cocoa-900/15 bg-white px-4 py-3 text-base outline-none md:text-sm focus:border-wine-600";
 
 export default function CheckoutPage() {
   const router = useRouter();
