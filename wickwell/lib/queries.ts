@@ -111,7 +111,7 @@ export async function getMoods() {
 }
 
 export async function getOccasions() {
-  const { data } = await supabase.from("occasions").select("slug, name, image_id").order("sort_order");
+  const { data } = await supabase.from("occasions").select("slug, name, image_id, image_url").order("sort_order");
   return data ?? [];
 }
 
@@ -153,6 +153,6 @@ export async function getTopReviews(limit = 4) {
 
 
 export async function getCategories() {
-  const { data } = await supabase.from("categories").select("slug, name, image_id").order("sort_order");
+  const { data } = await supabase.from("categories").select("slug, name, image_id, image_url").order("sort_order");
   return data ?? [];
 }

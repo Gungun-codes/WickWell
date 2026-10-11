@@ -1,24 +1,29 @@
 // FILE PATH: wickwell/components/CollectionTile.tsx  (replace/create this file in your project)
 "use client";
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { cld } from "@/lib/cloudinary";
+import { SafeImage } from "./SafeImage";
 
-type Props = { slug: string; name: string; imageId: string | null; href: string; ratio?: string };
+type Props = { slug: string; name: string; imageId: string | null; imageUrl: string | null; href: string; ratio?: string };
 
 const HAS_CLOUD = !!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-/** Photo from Cloudinary if one was uploaded, else /public/<slug>.png, else a warm gradient with the name. */
-export function CollectionTile({ slug, name, imageId, href, ratio = "aspect-[4/3]" }: Props) {
+/** Prefer the table's image URL, then a Cloudinary upload, then /public/<slug>.png. */
+export function CollectionTile({ slug, name, imageId, imageUrl, href, ratio = "aspect-[4/3]" }: Props) {
   const [broken, setBroken] = useState(false);
-  const src = imageId && HAS_CLOUD ? cld(imageId, 500) : `/${slug}.png`;
+  const directUrl = imageUrl?.trim();
+  const src = directUrl && /^https?:\/\//i.test(directUrl)
+    ? directUrl
+    : imageId && HAS_CLOUD
+      ? cld(imageId, 500)
+      : `/${slug}.png`;
 
   return (
     <Link href={href} className="group block">
       <span className={`relative block ${ratio} overflow-hidden rounded-card bg-gradient-to-br from-wine-700 via-wine-900 to-cocoa-900`}>
         {!broken && (
-          <Image
+          <SafeImage
             src={src}
             alt=""
             fill

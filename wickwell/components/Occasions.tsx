@@ -1,7 +1,7 @@
 // FILE PATH: wickwell/components/Occasions.tsx  (replace/create this file in your project)
 import { CollectionTile } from "./CollectionTile";
 
-type Item = { slug: string; name: string; image_id: string | null };
+type Item = { slug: string; name: string; image_id: string | null; image_url: string | null };
 
 export function Occasions({ items }: { items: Item[] }) {
   if (!items.length) return null;
@@ -12,7 +12,7 @@ export function Occasions({ items }: { items: Item[] }) {
       <ul className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
         {items.map((o) => (
           <li key={o.slug}>
-            <CollectionTile slug={o.slug} name={o.name} imageId={o.image_id} href={`/shop?occasion=${o.slug}`} />
+            <CollectionTile slug={o.slug} name={o.name} imageId={o.image_id} imageUrl={o.image_url} href={`/shop?occasion=${o.slug}`} />
           </li>
         ))}
       </ul>

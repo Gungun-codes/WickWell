@@ -1,7 +1,7 @@
 // FILE PATH: wickwell/components/Categories.tsx  (replace/create this file in your project)
 import { CollectionTile } from "./CollectionTile";
 
-type Item = { slug: string; name: string; image_id: string | null };
+type Item = { slug: string; name: string; image_id: string | null; image_url: string | null };
 
 export function Categories({ items }: { items: Item[] }) {
   if (!items.length) return null;
@@ -12,7 +12,7 @@ export function Categories({ items }: { items: Item[] }) {
       <ul className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {items.map((c) => (
           <li key={c.slug}>
-            <CollectionTile slug={`cat-${c.slug}`} name={c.name} imageId={c.image_id} href={`/shop?category=${c.slug}`} />
+            <CollectionTile slug={`cat-${c.slug}`} name={c.name} imageId={c.image_id} imageUrl={c.image_url} href={`/shop?category=${c.slug}`} />
           </li>
         ))}
       </ul>
