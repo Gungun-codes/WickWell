@@ -57,7 +57,7 @@ export function ShopFilterDrawer({
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-controls="shop-filter-drawer"
-        className="btn-ghost mt-6"
+        className="btn-ghost shrink-0"
       >
         <SlidersHorizontal size={18} aria-hidden />
         Filters{activeCount > 0 ? ` (${activeCount})` : ""}

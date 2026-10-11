@@ -18,9 +18,10 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
 
   return (
     <main className="container-lume py-10 md:py-14">
-      <h1 className="text-4xl sm:text-5xl">Find your next favourite scent.</h1>
-
-      <ShopFilterDrawer filters={searchParams} moods={moods} occasions={occasions} />
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="min-w-0 text-4xl sm:text-5xl">Find your next favourite scent.</h1>
+        <ShopFilterDrawer filters={searchParams} moods={moods} occasions={occasions} />
+      </div>
 
       <p className="mt-6 text-sm text-cocoa-600" aria-live="polite">
         {products.length} {products.length === 1 ? "candle" : "candles"}
