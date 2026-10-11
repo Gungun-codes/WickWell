@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 // Footer pages. Replace this copy with your real policies before launch.
 const pages: Record<string, { title: string; body: string[] }> = {
-  contact: { title: "Contact us", body: ["Questions about an order or a scent? Email hello@wickwell.example and we will reply within one working day."] },
+  contact: { title: "Contact us", body: ["Questions about an order or a scent? Email wickwell1210@gmail.com and we will reply within one working day."] },
   faqs: { title: "FAQs", body: ["How long do the candles burn? Up to 50 hours for the 180g size.", "Are they safe? Yes. We use non-toxic wax and clean fragrance oils.", "Can I gift a candle? Yes. Add a note at checkout."] },
   shipping: { title: "Shipping", body: ["We ship across India. Orders above ₹999 ship free; otherwise shipping is ₹99.", "Orders are poured and packed in 2 to 3 working days, then delivered in 3 to 7 days."] },
   returns: { title: "Returns", body: ["If your candle arrives damaged, message us within 48 hours with a photo and we will replace it."] },
