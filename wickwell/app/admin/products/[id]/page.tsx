@@ -35,6 +35,7 @@ export default function ProductEditor() {
   const [active, setActive] = useState(true);
   const [best, setBest] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
   const [variants, setVariants] = useState<VariantRow[]>([{ size: "180g", price: "", stock: "20" }]);
   const [removedVariants, setRemovedVariants] = useState<string[]>([]);
   const [moods, setMoods] = useState<Opt[]>([]);
@@ -62,6 +63,7 @@ export default function ProductEditor() {
       setNotes((p.notes ?? []).join(", ")); setFamilies(p.families ?? []);
       setBurn(String(p.burn_hours ?? "")); setActive(p.is_active); setBest(p.is_bestseller);
       setImages(p.image_ids ?? []);
+      setImageUrl(p.image_url ?? "");
       setVariants((p.variants ?? []).sort((a: any, b: any) => a.price_paise - b.price_paise).map((v: any) => ({
         id: v.id, size: v.size_label, price: String(v.price_paise / 100), stock: String(v.stock),
       })));
@@ -92,7 +94,7 @@ export default function ProductEditor() {
       const fields = {
         name: name.trim(), slug: cleanSlug, tagline: tagline.trim() || null, description: description.trim() || null,
         notes: notes.split(",").map((x) => x.trim()).filter(Boolean), families,
-        burn_hours: burn ? parseInt(burn, 10) : null, image_ids: images, is_active: active, is_bestseller: best,
+        burn_hours: burn ? parseInt(burn, 10) : null, image_ids: images, image_url: imageUrl.trim() || null, is_active: active, is_bestseller: best,
       };
       let pid = isNew ? "" : id;
       if (isNew) {
@@ -170,6 +172,11 @@ export default function ProductEditor() {
       <section className={section}>
         <h2 className="text-2xl">Photos</h2>
         <div className="mt-3"><ImageUploader value={images} onChange={setImages} /></div>
+        <div className="mt-5">
+          <label htmlFor="imgurl" className={label}>Main photo link (optional)</label>
+          <input id="imgurl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={input} inputMode="url" placeholder="https://res.cloudinary.com/…/photo.jpg" />
+          <p className="mt-1 text-xs text-cocoa-600">If you paste a link here, it is used as the main photo. Leave empty to use the uploaded photos above.</p>
+        </div>
       </section>
 
       <section className={`${section} space-y-3`}>

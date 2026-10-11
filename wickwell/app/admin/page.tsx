@@ -9,7 +9,7 @@ import { rupees } from "@/lib/format";
 import { revalidateStore } from "./actions";
 
 type Row = {
-  id: string; slug: string; name: string; image_ids: string[]; is_active: boolean; is_bestseller: boolean;
+  id: string; slug: string; name: string; image_ids: string[]; image_url: string | null; is_active: boolean; is_bestseller: boolean;
   variants: { price_paise: number; stock: number }[];
 };
 
@@ -20,7 +20,7 @@ export default function AdminProducts() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("products")
-      .select("id, slug, name, image_ids, is_active, is_bestseller, variants(price_paise, stock)")
+      .select("id, slug, name, image_ids, image_url, is_active, is_bestseller, variants(price_paise, stock)")
       .order("created_at", { ascending: false });
     if (error) setError(error.message);
     setRows((data as Row[]) ?? []);
@@ -62,7 +62,7 @@ export default function AdminProducts() {
             return (
               <li key={r.id} className="flex gap-3 rounded-card bg-cream-50 p-3 shadow-soft">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r.image_ids[0] ? cld(r.image_ids[0], 200) : `/${r.slug}.png`} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
+                <img src={r.image_url?.trim() || (r.image_ids[0] ? cld(r.image_ids[0], 200) : `/${r.slug}.png`)} alt="" className="size-20 shrink-0 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{r.name}</p>
                   <p className="text-sm text-cocoa-600">

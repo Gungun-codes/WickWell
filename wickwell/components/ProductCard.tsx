@@ -1,4 +1,5 @@
-import Image from "next/image";
+// FILE PATH: wickwell/components/ProductCard.tsx  (replace/create this file in your project)
+import { SafeImage } from "./SafeImage";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { productImage } from "@/lib/images";
@@ -14,8 +15,8 @@ export function ProductCard({ p }: { p: ProductCardData }) {
     <article className="overflow-hidden rounded-card bg-cream-50 shadow-soft">
       <Link href={`/shop/${p.slug}`} className="block">
         <div className="relative aspect-square">
-          <Image
-            src={productImage(p.slug, p.image_ids, 0, 600)!}
+          <SafeImage
+            src={productImage(p.slug, p.image_ids, 0, 600, p.image_url)!}
             alt={`${p.name} candle`}
             fill
             sizes="(min-width:1024px) 25vw, 50vw"

@@ -1,6 +1,6 @@
 // FILE PATH: wickwell/app/cart/page.tsx  (replace/create this file in your project)
 "use client";
-import Image from "next/image";
+import { SafeImage } from "@/components/SafeImage";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/lib/cart";
@@ -35,7 +35,7 @@ export default function CartPage() {
           {lines.map((l) => (
             <li key={l.variantId} className="flex gap-4 rounded-card bg-cream-50 p-3 shadow-soft">
               <Link href={`/shop/${l.slug}`} className="relative size-24 shrink-0 overflow-hidden rounded-lg">
-                <Image src={l.image ?? `/${l.slug}.png`} alt="" fill sizes="96px" className="object-cover" />
+                <SafeImage src={l.image ?? `/${l.slug}.png`} alt="" fill sizes="96px" className="object-cover" />
               </Link>
               <div className="flex flex-1 flex-col justify-between">
                 <div className="flex justify-between gap-3">

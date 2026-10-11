@@ -21,7 +21,7 @@ export function QuickAdd({ p }: { p: ProductCardData }) {
         if (!v) return;
         add({
           variantId: v.id, slug: p.slug, name: p.name, size: v.size_label,
-          pricePaise: v.price_paise, image: productImage(p.slug, p.image_ids, 0, 200),
+          pricePaise: v.price_paise, image: productImage(p.slug, p.image_ids, 0, 200, p.image_url),
         });
         setDone(true);
         setTimeout(() => setDone(false), 1400);

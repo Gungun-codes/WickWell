@@ -9,12 +9,13 @@ export type ProductCardData = {
   name: string;
   notes: string[];
   image_ids: string[];
+  image_url?: string | null;
   variants: Variant[];
   avg_rating: number | null;
   review_count: number;
 };
 
-const CARD_SELECT = "id, slug, name, notes, image_ids, variants(id, size_label, price_paise, stock)";
+const CARD_SELECT = "id, slug, name, notes, image_ids, image_url, variants(id, size_label, price_paise, stock)";
 
 async function withRatings(products: any[]): Promise<ProductCardData[]> {
   if (!products.length) return [];
@@ -81,7 +82,7 @@ export async function getProducts({ mood, occasion, category, sort, q }: ShopFil
 export async function getProductBySlug(slug: string) {
   const { data } = await supabase
     .from("products")
-    .select("id, slug, name, tagline, description, notes, families, burn_hours, image_ids, variants(id, size_label, price_paise, stock)")
+    .select("id, slug, name, tagline, description, notes, families, burn_hours, image_ids, image_url, variants(id, size_label, price_paise, stock)")
     .eq("slug", slug).eq("is_active", true).maybeSingle();
   if (!data) return null;
   return { ...data, variants: [...data.variants].sort((a, b) => a.price_paise - b.price_paise) };
