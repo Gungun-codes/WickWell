@@ -38,7 +38,7 @@ SHIPPING_PAISE = 9900
 app = FastAPI(title="WickWell API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()],
+    allow_origins=[o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "http://wick-well.vercel.app").split(",") if o.strip()],
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
