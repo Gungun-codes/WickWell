@@ -1,4 +1,4 @@
-# FILE PATH: wickwell/api/main.py  (replace/create this file in your project)
+# FILE PATH: wickwell/api/main.py  (replace this file in your project)
 """
 WickWell API — checkout + payments (+ Scent Finder).
 Run:  pip install -r requirements.txt
@@ -33,7 +33,7 @@ SHIPPING_PAISE = 9900
 app = FastAPI(title="WickWell API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=[o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()],
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
@@ -231,13 +231,19 @@ def upload_signature(authorization: str | None = Header(default=None)):
     """Admin-only. Returns a short-lived signature so the browser can upload a product photo
     straight to Cloudinary without the API secret ever leaving the server."""
     require_admin(authorization)
+    cloud = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+    api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+    secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+    missing = [n for n, v in (("CLOUDINARY_CLOUD_NAME", cloud), ("CLOUDINARY_API_KEY", api_key), ("CLOUDINARY_API_SECRET", secret)) if not v]
+    if missing:
+        raise HTTPException(500, "Cloudinary is not set up on the server. Missing: " + ", ".join(missing))
     folder = "wickwell/products"
     timestamp = int(time.time())
     to_sign = f"folder={folder}&timestamp={timestamp}"
-    signature = hashlib.sha1((to_sign + os.environ["CLOUDINARY_API_SECRET"]).encode()).hexdigest()
+    signature = hashlib.sha1((to_sign + secret).encode()).hexdigest()
     return {
-        "cloud_name": os.environ["CLOUDINARY_CLOUD_NAME"],
-        "api_key": os.environ["CLOUDINARY_API_KEY"],
+        "cloud_name": cloud,
+        "api_key": api_key,
         "timestamp": timestamp,
         "folder": folder,
         "signature": signature,

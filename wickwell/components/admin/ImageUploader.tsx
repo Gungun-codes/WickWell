@@ -1,11 +1,11 @@
-// FILE PATH: wickwell/components/admin/ImageUploader.tsx  (replace/create this file in your project)
+// FILE PATH: wickwell/components/admin/ImageUploader.tsx  (replace this file in your project)
 "use client";
 import { useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ImagePlus, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cld } from "@/lib/cloudinary";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim().replace(/\/+$/, "");
 const MAX_MB = 8;
 
 /** Uploads straight to Cloudinary using a signature from our Python API (admin-only). First image = main photo. */
@@ -16,19 +16,42 @@ export function ImageUploader({ value, onChange, max }: { value: string[]; onCha
 
   async function uploadOne(file: File): Promise<string> {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Please sign in again.");
-    const r = await fetch(`${API}/admin/upload-signature`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } });
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail ?? "Could not get an upload permission.");
+    if (!session) throw new Error("You are signed out. Sign in again and retry.");
+
+    // Step 1: ask our API for a signed upload permission.
+    let r: Response;
+    try {
+      r = await fetch(`${API}/admin/upload-signature`, { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } });
+    } catch {
+      throw new Error(
+        API.includes("localhost")
+          ? "Step 1 failed: the site is pointing at localhost. Set NEXT_PUBLIC_API_URL in Vercel to your deployed Python API URL, then redeploy."
+          : `Step 1 failed: cannot reach the API at ${API}. It may be asleep or down, or its ALLOWED_ORIGINS does not include this website. Open ${API}/health to check.`
+      );
+    }
+    if (!r.ok) {
+      const detail = (await r.json().catch(() => null))?.detail;
+      if (r.status === 401) throw new Error("Step 1 failed: the API did not accept your login. Sign out, sign in again and retry.");
+      if (r.status === 403) throw new Error("Step 1 failed: this account is not an admin (profiles.is_admin must be true).");
+      throw new Error(`Step 1 failed (${r.status}): ${typeof detail === "string" ? detail : "the API returned an error. Check its logs."}`);
+    }
     const sig = await r.json();
+
+    // Step 2: upload straight to Cloudinary with that signature.
     const fd = new FormData();
     fd.append("file", file);
     fd.append("api_key", sig.api_key);
     fd.append("timestamp", String(sig.timestamp));
     fd.append("folder", sig.folder);
     fd.append("signature", sig.signature);
-    const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`, { method: "POST", body: fd });
-    const j = await up.json();
-    if (!up.ok) throw new Error(j.error?.message ?? "Upload failed.");
+    let up: Response;
+    try {
+      up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`, { method: "POST", body: fd });
+    } catch {
+      throw new Error("Step 2 failed: could not reach Cloudinary. Check your internet connection.");
+    }
+    const j = await up.json().catch(() => ({}));
+    if (!up.ok) throw new Error(`Step 2 failed: Cloudinary says "${j.error?.message ?? up.status}". Check CLOUDINARY_CLOUD_NAME, API_KEY and API_SECRET on the API server.`);
     return j.public_id as string;
   }
 

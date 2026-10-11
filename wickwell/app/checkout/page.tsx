@@ -1,4 +1,4 @@
-// FILE PATH: wickwell/app/checkout/page.tsx  (replace/create this file in your project)
+// FILE PATH: wickwell/app/checkout/page.tsx  (replace this file in your project)
 "use client";
 import { useState } from "react";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { rupees } from "@/lib/format";
 import { shippingFor } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim().replace(/\/+$/, "");
 
 declare global {
   interface Window { Razorpay?: new (opts: Record<string, unknown>) => { open: () => void }; }
