@@ -9,7 +9,39 @@ import { rupees } from "@/lib/format";
 import { shippingFor } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
 
-const API = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim().replace(/\/+$/, "");
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const API = configuredApiUrl
+  ? `${/^https?:\/\//i.test(configuredApiUrl) ? "" : "https://"}${configuredApiUrl}`.replace(/\/+$/, "")
+  : process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "";
+
+async function readApiResponse<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    throw new Error(
+      `Payment API returned a non-JSON response (HTTP ${response.status}). Check that NEXT_PUBLIC_API_URL points to the running FastAPI service.`,
+    );
+  }
+
+  let body: { detail?: string | { msg?: string }[] } & T;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error("Payment API returned invalid JSON. Check the API service logs.");
+  }
+
+  if (!response.ok) {
+    const detail = body.detail;
+    const message = typeof detail === "string"
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((item) => item.msg).filter(Boolean).join(", ")
+        : "";
+    throw new Error(message || `Payment API request failed (HTTP ${response.status}).`);
+  }
+  return body;
+}
 
 type RazorpaySuccess = {
   razorpay_payment_id: string;
@@ -69,6 +101,9 @@ export default function CheckoutPage() {
     const get = (k: string) => String(f.get(k) ?? "").trim();
 
     try {
+      if (!API) {
+        throw new Error("Payment API is not configured. Set NEXT_PUBLIC_API_URL to your FastAPI service URL and redeploy.");
+      }
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${API}/orders`, {
         method: "POST",
@@ -85,8 +120,13 @@ export default function CheckoutPage() {
           },
         }),
       });
-      const order = await res.json();
-      if (!res.ok) throw new Error(typeof order.detail === "string" ? order.detail : "Could not create your order.");
+      const order = await readApiResponse<{
+        key_id: string;
+        amount: number;
+        currency: string;
+        order_id: string;
+        order_number: string;
+      }>(res);
       if (!window.Razorpay) throw new Error("Payment window failed to load. Refresh and try again.");
 
       const checkout = new window.Razorpay({
@@ -106,15 +146,12 @@ export default function CheckoutPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(response),
             });
-            if (!verification.ok) {
-              setError("Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.");
-              setBusy(false);
-              return;
-            }
+            await readApiResponse<{ ok: boolean; order_number: string }>(verification);
             clear();
             router.push(`/order/success?n=${order.order_number}`);
-          } catch {
-            setError("Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.");
+          } catch (verificationError) {
+            const reason = verificationError instanceof Error ? ` ${verificationError.message}` : "";
+            setError(`Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.${reason}`);
             setBusy(false);
           }
         },
