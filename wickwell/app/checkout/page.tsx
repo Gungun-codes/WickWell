@@ -11,8 +11,34 @@ import { supabase } from "@/lib/supabase";
 
 const API = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim().replace(/\/+$/, "");
 
+type RazorpaySuccess = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayFailure = {
+  error?: { description?: string; reason?: string };
+};
+
 declare global {
-  interface Window { Razorpay?: new (opts: Record<string, unknown>) => { open: () => void }; }
+  interface Window {
+    Razorpay?: new (opts: {
+      key: string;
+      amount: number;
+      currency: string;
+      name: string;
+      description: string;
+      order_id: string;
+      prefill: { name: string; email: string; contact: string };
+      theme: { color: string };
+      modal: { ondismiss: () => void };
+      handler: (response: RazorpaySuccess) => void;
+    }) => {
+      open: () => void;
+      on: (event: "payment.failed", handler: (response: RazorpayFailure) => void) => void;
+    };
+  }
 }
 
 const field =
@@ -23,6 +49,7 @@ export default function CheckoutPage() {
   const { lines, ready, subtotalPaise, clear } = useCart();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [checkoutLoaded, setCheckoutLoaded] = useState(false);
   const shipping = shippingFor(subtotalPaise);
 
   if (ready && !lines.length) {
@@ -62,31 +89,41 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(typeof order.detail === "string" ? order.detail : "Could not create your order.");
       if (!window.Razorpay) throw new Error("Payment window failed to load. Refresh and try again.");
 
-      new window.Razorpay({
+      const checkout = new window.Razorpay({
         key: order.key_id,
         amount: order.amount,
-        currency: "INR",
+        currency: order.currency,
         name: "WickWell",
         description: `Order #${order.order_number}`,
-        order_id: order.razorpay_order_id,
+        order_id: order.order_id,
         prefill: { name: get("name"), email: get("email"), contact: get("phone") },
         theme: { color: "#8c1d2e" },
         modal: { ondismiss: () => setBusy(false) },
-        handler: async (r: Record<string, string>) => {
-          const v = await fetch(`${API}/orders/verify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(r),
-          });
-          if (!v.ok) {
+        handler: async (response: RazorpaySuccess) => {
+          try {
+            const verification = await fetch(`${API}/orders/verify`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(response),
+            });
+            if (!verification.ok) {
+              setError("Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.");
+              setBusy(false);
+              return;
+            }
+            clear();
+            router.push(`/order/success?n=${order.order_number}`);
+          } catch {
             setError("Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.");
             setBusy(false);
-            return;
           }
-          clear();
-          router.push(`/order/success?n=${order.order_number}`);
         },
-      }).open();
+      });
+      checkout.on("payment.failed", (response) => {
+        setError(response.error?.description || "Payment failed. Please try again.");
+        setBusy(false);
+      });
+      checkout.open();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setBusy(false);
@@ -95,7 +132,15 @@ export default function CheckoutPage() {
 
   return (
     <main className="container-lume py-10 md:py-14">
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
+        onReady={() => setCheckoutLoaded(true)}
+        onError={() => {
+          setCheckoutLoaded(false);
+          setError("Secure checkout could not load. Check your connection and refresh the page.");
+        }}
+      />
       <h1 className="text-4xl sm:text-5xl">Checkout</h1>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
@@ -116,8 +161,8 @@ export default function CheckoutPage() {
 
           {error && <p role="alert" className="rounded-md bg-wine-600/10 px-4 py-3 text-sm text-wine-700">{error}</p>}
 
-          <button disabled={busy || !ready} className="btn-primary w-full disabled:opacity-50">
-            {busy ? "Opening payment…" : `Pay ${rupees(subtotalPaise + shipping)}`}
+          <button disabled={busy || !ready || !checkoutLoaded} className="btn-primary w-full disabled:opacity-50">
+            {busy ? "Opening payment…" : !checkoutLoaded ? "Loading secure checkout…" : `Pay ${rupees(subtotalPaise + shipping)}`}
           </button>
           <p className="text-center text-xs text-cocoa-600">Secure payment by Razorpay: UPI, cards, netbanking and wallets.</p>
         </form>
