@@ -14,6 +14,7 @@ import hmac
 import os
 import re
 import time
+from pathlib import Path
 
 import razorpay
 from dotenv import load_dotenv
@@ -23,8 +24,12 @@ from pydantic import BaseModel, Field, field_validator
 from supabase import create_client
 
 load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[1] / ".env.local")
 
-db = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
+db = create_client(
+    os.environ.get("SUPABASE_URL") or os.environ["NEXT_PUBLIC_SUPABASE_URL"],
+    os.environ["SUPABASE_SERVICE_ROLE_KEY"],
+)
 rzp = razorpay.Client(auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"]))
 
 FREE_SHIPPING_ABOVE_PAISE = 99900  # keep in sync with lib/pricing.ts
@@ -76,9 +81,9 @@ class OrderIn(BaseModel):
 
 
 class VerifyIn(BaseModel):
-    razorpay_order_id: str
-    razorpay_payment_id: str
-    razorpay_signature: str
+    razorpay_order_id: str | None = None
+    razorpay_payment_id: str | None = None
+    razorpay_signature: str | None = None
 
 
 # ───────── Helpers ─────────
@@ -127,6 +132,10 @@ def health():
 
 @app.post("/orders")
 def create_order(body: OrderIn, authorization: str | None = Header(default=None)):
+    user_id = user_id_from_token(authorization)
+    if authorization and not user_id:
+        raise HTTPException(401, "Invalid authorization token")
+
     # Merge duplicate variant lines, then price everything from the DB.
     qty: dict[str, int] = {}
     for i in body.items:
@@ -153,11 +162,13 @@ def create_order(body: OrderIn, authorization: str | None = Header(default=None)
 
     shipping = 0 if subtotal >= FREE_SHIPPING_ABOVE_PAISE else SHIPPING_PAISE
     total = subtotal + shipping
+    if total < 100:
+        raise HTTPException(400, "The minimum payment amount is ₹1.00.")
 
     order = (
         db.table("orders")
         .insert({
-            "user_id": user_id_from_token(authorization),
+            "user_id": user_id,
             "email": body.email.lower(),
             "subtotal_paise": subtotal,
             "shipping_paise": shipping,
@@ -182,29 +193,43 @@ def create_order(body: OrderIn, authorization: str | None = Header(default=None)
         })
     except Exception:
         db.table("orders").update({"status": "cancelled"}).eq("id", order["id"]).execute()
-        raise HTTPException(502, "Payment provider is unavailable. Please try again.")
+        raise HTTPException(500, "Payment provider is unavailable. Please try again.")
 
     db.table("orders").update({"razorpay_order_id": r["id"]}).eq("id", order["id"]).execute()
     return {
-        "order_id": order["id"],
+        "order_id": r["id"],
         "order_number": order["order_number"],
         "razorpay_order_id": r["id"],
         "amount": total,
+        "currency": r["currency"],
         "key_id": os.environ["RAZORPAY_KEY_ID"],
     }
 
 
 @app.post("/orders/verify")
 def verify(body: VerifyIn):
-    try:
-        rzp.utility.verify_payment_signature(body.model_dump())
-    except razorpay.errors.SignatureVerificationError:
+    order_id = body.razorpay_order_id
+    payment_id = body.razorpay_payment_id
+    signature = body.razorpay_signature
+    if order_id is None or not order_id.strip():
+        raise HTTPException(400, "razorpay_order_id is required.")
+    if payment_id is None or not payment_id.strip():
+        raise HTTPException(400, "razorpay_payment_id is required.")
+    if signature is None or not signature.strip():
+        raise HTTPException(400, "razorpay_signature is required.")
+
+    expected = hmac.new(
+        os.environ["RAZORPAY_KEY_SECRET"].encode(),
+        f"{order_id}|{payment_id}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    if not hmac.compare_digest(expected, signature):
         raise HTTPException(400, "Payment signature invalid")
 
-    rows = db.table("orders").select("*").eq("razorpay_order_id", body.razorpay_order_id).execute().data
+    rows = db.table("orders").select("*").eq("razorpay_order_id", order_id).execute().data
     if not rows:
         raise HTTPException(404, "Order not found")
-    mark_paid(rows[0], body.razorpay_payment_id)
+    mark_paid(rows[0], payment_id)
     return {"ok": True, "order_number": rows[0]["order_number"]}
 
 
