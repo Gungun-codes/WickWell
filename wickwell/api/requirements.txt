@@ -1,0 +1,6 @@
+# Versions below are the ones the API was tested with (Python 3.12).
+fastapi==0.143.0
+uvicorn==0.54.0
+supabase==2.32.0
+python-dotenv==1.2.4
+razorpay==2.0.1
