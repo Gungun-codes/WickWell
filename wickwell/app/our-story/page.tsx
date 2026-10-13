@@ -1,5 +1,6 @@
 // FILE PATH: wickwell/app/our-story/page.tsx  (replace/create this file in your project)
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Flame, Heart, Leaf } from "lucide-react";
 import { SITE, whatsappLink } from "@/lib/site";
@@ -42,8 +43,17 @@ export default function OurStoryPage() {
               <Link href="/scent-finder" className="btn-ghost min-h-12 text-cocoa-900">Find my scent</Link>
             </div>
           </div>
-          <div className="rounded-card bg-gradient-to-br from-blush-200 via-cream-50 to-cream-100 p-6 shadow-soft">
-            <div className="aspect-[4/5] rounded-card bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.7),_transparent_30%),linear-gradient(135deg,#3a0f14,#8c1d2e_40%,#f5dcd6)]" />
+          <div className="overflow-hidden rounded-card bg-gradient-to-br from-blush-200 via-cream-50 to-cream-100 p-2 shadow-soft">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-card">
+              <Image
+                src="/founder.jpeg"
+                alt="Founder portrait"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-cover"
+              />
+            </div>
           </div>
         </div>
       </section>
