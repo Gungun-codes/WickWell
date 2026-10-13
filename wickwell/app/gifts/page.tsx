@@ -1,42 +1,39 @@
-import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-const giftSets = [
-  { title: "Starter gift box", price: "₹1,999" },
-  { title: "Date-night duo", price: "₹2,499" },
-  { title: "Self-care bundle", price: "₹2,999" },
-  { title: "Custom scent box", price: "₹3,499" },
-];
+async function subscribe(formData: FormData) {
+  "use server";
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return;
+
+  await supabase.from("newsletter_subscribers").upsert({ email }, { onConflict: "email", ignoreDuplicates: true });
+}
 
 export default function GiftsPage() {
   return (
-    <main className="container-lume py-16">
-      <div className="mb-8">
-        <p className="text-sm uppercase tracking-[0.2em] text-cocoa-600">Gift gifting</p>
-        <h1 className="mt-2 text-4xl sm:text-5xl">Thoughtful gifts for every moment.</h1>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {giftSets.map((gift) => (
-          <div key={gift.title} className="rounded-card bg-cream-50 p-5 shadow-soft">
-            <div className="mb-4 aspect-[4/3] rounded-xl bg-gradient-to-br from-cocoa-900 via-wine-600 to-blush-200" />
-            <h2 className="text-xl">{gift.title}</h2>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-cocoa-600">Curated set</span>
-              <span className="font-medium text-wine-600">{gift.price}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-10 rounded-card bg-cocoa-900 p-8 text-cream-50">
-        <h2 className="text-3xl">Need a custom gift?</h2>
-        <p className="mt-3 max-w-xl text-cream-50/80">
-          Choose a mood, add a note, and create a candle set that feels personal.
+    <main className="container-lume py-16 md:py-20">
+      <section className="mx-auto max-w-2xl rounded-card bg-cream-50 p-8 text-center shadow-soft sm:p-10">
+        <p className="text-sm uppercase tracking-[0.25em] text-wine-600">Gifts</p>
+        <h1 className="mt-3 text-4xl sm:text-5xl">Coming soon</h1>
+        <p className="mt-4 text-lg text-cocoa-600">
+          Be the first one to know when gifts get live.
         </p>
-        <Link href="/scent-finder" className="mt-6 inline-flex rounded-md bg-cream-50 px-5 py-3 text-sm font-medium text-cocoa-900">
-          Build my gift
-        </Link>
-      </div>
+
+        <form action={subscribe} className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <label htmlFor="gift-email" className="sr-only">Email</label>
+          <input
+            id="gift-email"
+            name="email"
+            type="email"
+            required
+            placeholder="Enter your email"
+            className="min-w-0 flex-1 rounded-md border border-cocoa-200 bg-white px-4 py-3 text-base text-cocoa-900 placeholder:text-cocoa-600"
+          />
+          <button type="submit" className="btn-primary min-h-12">
+            Notify me
+          </button>
+        </form>
+      </section>
     </main>
   );
 }
