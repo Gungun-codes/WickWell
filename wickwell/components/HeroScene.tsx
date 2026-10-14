@@ -1,4 +1,4 @@
-// FILE PATH: wickwell/components/HeroScene.tsx  (replace/create this file in your project)
+// FILE PATH: wickwell/components/HeroScene.tsx  (replace this file in your project)
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -183,10 +183,12 @@ export function HeroScene() {
       <button
         type="button"
         onClick={() => setState((current) => (current === "lit" ? "out" : "lit"))}
-        className="absolute right-4 top-[4.5rem] z-10 inline-flex min-h-10 items-center gap-2 rounded-full border border-white/25 bg-cocoa-900/55 px-3.5 text-xs text-cream-50 backdrop-blur transition hover:bg-cocoa-900/75 md:bottom-24 md:right-8 md:top-auto md:px-4 md:text-sm"
+        aria-label={lit ? "Blow out the candle" : "Light the candle"}
+        title={lit ? "Blow out the candle" : "Light the candle"}
+        data-lit={lit}
+        className="hero-torch absolute right-4 top-[4.5rem] z-10 grid size-12 place-items-center rounded-full text-gold-400 backdrop-blur md:bottom-24 md:right-8 md:top-auto md:size-14"
       >
-        <Flame size={16} className={lit ? "text-gold-400" : "opacity-60"} aria-hidden />
-        {lit ? "Blow out the candle" : "Light the candle"}
+        <Flame size={24} aria-hidden className="md:size-7" />
       </button>
     </>
   );

@@ -1,3 +1,4 @@
+/* FILE PATH: wickwell/components/hero.css  (replace this file in your project) */
 /* Hero candle animation. All sizes use --u (= 1/1000 of the photo width) so effects scale with the image. */
 
 .hero-fx { position: absolute; pointer-events: none; }
@@ -190,3 +191,33 @@
 }
 .hero-cta-ghost:active { transform: translateY(0) scale(.98); }
 .hero-cta:focus-visible, .hero-cta-ghost:focus-visible { outline: 2px solid #ffd9a0; outline-offset: 3px; }
+
+/* ───────── Candle switch: symbol only, glowing so people notice and tap it ───────── */
+.hero-torch {
+  background: radial-gradient(circle at 50% 40%, rgb(255 214 140 / .28), rgb(36 18 16 / .6) 70%);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 208 120 / .75),
+    0 0 20px rgb(255 176 64 / .55),
+    0 0 44px rgb(255 150 40 / .28);
+  transition: transform .25s ease, box-shadow .3s ease;
+  animation: hero-torch-ping 2.4s infinite ease-out;
+}
+.hero-torch:hover { transform: scale(1.1); box-shadow: inset 0 0 0 1.5px rgb(255 220 150), 0 0 28px rgb(255 190 80 / .8), 0 0 60px rgb(255 160 50 / .45); }
+.hero-torch:active { transform: scale(.94); }
+.hero-torch:focus-visible { outline: 2px solid #ffd9a0; outline-offset: 4px; }
+.hero-torch svg { filter: drop-shadow(0 0 7px rgb(255 190 80 / .95)); }
+.hero-torch[data-lit="true"] svg { fill: rgb(255 196 90 / .85); animation: hero-torch-flicker 1.6s infinite ease-in-out; }
+/* blown out: icon looks like an unlit outline and the halo pulses harder, inviting a tap */
+.hero-torch[data-lit="false"] svg { fill: none; color: #ffe2b0; filter: drop-shadow(0 0 4px rgb(255 190 80 / .6)); }
+.hero-torch[data-lit="false"] { animation-duration: 1.6s; }
+@keyframes hero-torch-ping {
+  0%   { box-shadow: inset 0 0 0 1.5px rgb(255 208 120 / .75), 0 0 20px rgb(255 176 64 / .55), 0 0 0 0 rgb(255 190 90 / .55); }
+  70%  { box-shadow: inset 0 0 0 1.5px rgb(255 208 120 / .75), 0 0 26px rgb(255 176 64 / .7), 0 0 0 18px rgb(255 190 90 / 0); }
+  100% { box-shadow: inset 0 0 0 1.5px rgb(255 208 120 / .75), 0 0 20px rgb(255 176 64 / .55), 0 0 0 0 rgb(255 190 90 / 0); }
+}
+@keyframes hero-torch-flicker {
+  0%, 100% { transform: scale(1) rotate(0); }
+  25% { transform: scale(1.06) rotate(-3deg); }
+  55% { transform: scale(.96) rotate(2deg); }
+  80% { transform: scale(1.04) rotate(-1deg); }
+}

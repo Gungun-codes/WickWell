@@ -6,6 +6,7 @@ import { Occasions } from "@/components/Occasions";
 import { Categories } from "@/components/Categories";
 import { Reviews, type HomeReview } from "@/components/Reviews";
 import { Newsletter } from "@/components/Newsletter";
+import { HomeStory } from "@/components/HomeStory";
 import { HomeFaq } from "@/components/HomeFaq";
 import { getBestSellers, getCategories, getMoods, getOccasions, getTopReviews } from "@/lib/queries";
 
@@ -28,6 +29,7 @@ export default async function HomePage() {
       <Categories items={categories} />
       <Occasions items={occasions} />
       <Reviews reviews={reviews as HomeReview[]} />
+      <HomeStory />
       <HomeFaq />
       <Newsletter />
     </main>

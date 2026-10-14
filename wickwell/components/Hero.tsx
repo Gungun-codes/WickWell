@@ -1,8 +1,10 @@
-// FILE PATH: wickwell/components/Hero.tsx  (replace/create this file in your project)
+// FILE PATH: wickwell/components/Hero.tsx  (replace this file in your project)
 import Link from "next/link";
-import { Leaf, Clock, Flame, Heart, Sparkles, ArrowRight } from "lucide-react";
+import { Leaf, Clock, Flame, Heart, ShoppingBag, ArrowRight } from "lucide-react";
 import { HeroScene } from "./HeroScene";
 import { RotatingWords } from "./RotatingWords";
+import { FREE_SHIPPING_ABOVE_PAISE } from "@/lib/pricing";
+import { rupees } from "@/lib/format";
 
 const trust = [
   { Icon: Leaf, label: "Non-toxic & safe" },
@@ -49,16 +51,15 @@ export function Hero() {
           <RotatingWords />
         </p>
 
-        <div className="hero-rise mt-8 flex flex-wrap items-center gap-3" style={{ ["--d" as string]: "1.8s" }}>
-          <Link href="/scent-finder" className="hero-cta">
-            <Sparkles size={18} className="spark" aria-hidden />
-            Find my scent
+        <div className="hero-rise mt-8" style={{ ["--d" as string]: "1.8s" }}>
+          <Link href="/shop" className="hero-cta w-full sm:w-auto sm:min-w-56">
+            <ShoppingBag size={18} className="spark" aria-hidden />
+            Shop candles
             <ArrowRight size={18} className="arrow" aria-hidden />
           </Link>
-          <Link href="/shop" className="hero-cta-ghost">Shop candles</Link>
         </div>
         <p className="hero-fade mt-4 text-sm text-cream-50/70" style={{ ["--d" as string]: "2.1s" }}>
-          Takes 1 minute · Free shipping over ₹999
+          Free shipping over {rupees(FREE_SHIPPING_ABOVE_PAISE)}
         </p>
 
         <p
