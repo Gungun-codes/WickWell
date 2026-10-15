@@ -15,6 +15,7 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
 
 import razorpay
 from dotenv import load_dotenv
@@ -23,7 +24,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from supabase import create_client
 
-load_dotenv()
+API_DIR = Path(__file__).resolve().parent
+load_dotenv(API_DIR / ".env")
+load_dotenv(API_DIR.parent / ".env.local")
 
 log = logging.getLogger("uvicorn.error")  # shows up in Render → Logs
 
@@ -40,7 +43,13 @@ def env(name: str) -> str:
 
 def supabase_url() -> str:
     """Accepts 'xxxx.supabase.co', 'https://xxxx.supabase.co/' or a pasted '.../rest/v1/' link."""
-    url = env("SUPABASE_URL")
+    url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    if not url:
+        raise RuntimeError(
+            "Environment variable SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL is missing or empty. "
+            "Add it to the API environment, then redeploy."
+        )
+    url = url.strip().strip("\"'").strip()
     if "NEXT_PUBLIC" in url or " " in url:
         raise RuntimeError("SUPABASE_URL looks wrong. It must be only the project URL, like https://abcdxyz.supabase.co")
     if not url.startswith(("http://", "https://")):
