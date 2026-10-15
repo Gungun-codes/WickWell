@@ -9,68 +9,10 @@ import { rupees } from "@/lib/format";
 import { shippingFor } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
 
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-const API = configuredApiUrl
-  ? `${/^https?:\/\//i.test(configuredApiUrl) ? "" : "https://"}${configuredApiUrl}`.replace(/\/+$/, "")
-  : process.env.NODE_ENV === "development"
-    ? "http://localhost:8000"
-    : "";
-
-async function readApiResponse<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().includes("application/json")) {
-    throw new Error(
-      `Payment API returned a non-JSON response (HTTP ${response.status}). Check that NEXT_PUBLIC_API_URL points to the running FastAPI service.`,
-    );
-  }
-
-  let body: { detail?: string | { msg?: string }[] } & T;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error("Payment API returned invalid JSON. Check the API service logs.");
-  }
-
-  if (!response.ok) {
-    const detail = body.detail;
-    const message = typeof detail === "string"
-      ? detail
-      : Array.isArray(detail)
-        ? detail.map((item) => item.msg).filter(Boolean).join(", ")
-        : "";
-    throw new Error(message || `Payment API request failed (HTTP ${response.status}).`);
-  }
-  return body;
-}
-
-type RazorpaySuccess = {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
-};
-
-type RazorpayFailure = {
-  error?: { description?: string; reason?: string };
-};
+const API = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim().replace(/\/+$/, "");
 
 declare global {
-  interface Window {
-    Razorpay?: new (opts: {
-      key: string;
-      amount: number;
-      currency: string;
-      name: string;
-      description: string;
-      order_id: string;
-      prefill: { name: string; email: string; contact: string };
-      theme: { color: string };
-      modal: { ondismiss: () => void };
-      handler: (response: RazorpaySuccess) => void;
-    }) => {
-      open: () => void;
-      on: (event: "payment.failed", handler: (response: RazorpayFailure) => void) => void;
-    };
-  }
+  interface Window { Razorpay?: new (opts: Record<string, unknown>) => { open: () => void; on?: (event: string, cb: (r: any) => void) => void }; }
 }
 
 const field =
@@ -81,7 +23,6 @@ export default function CheckoutPage() {
   const { lines, ready, subtotalPaise, clear } = useCart();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [checkoutLoaded, setCheckoutLoaded] = useState(false);
   const shipping = shippingFor(subtotalPaise);
 
   if (ready && !lines.length) {
@@ -101,11 +42,10 @@ export default function CheckoutPage() {
     const get = (k: string) => String(f.get(k) ?? "").trim();
 
     try {
-      if (!API) {
-        throw new Error("Payment API is not configured. Set NEXT_PUBLIC_API_URL to your FastAPI service URL and redeploy.");
-      }
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${API}/orders`, {
+      let res: Response;
+      try {
+        res = await fetch(`${API}/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,48 +59,48 @@ export default function CheckoutPage() {
             line2: get("line2") || null, city: get("city"), state: get("state"), pincode: get("pincode"),
           },
         }),
-      });
-      const order = await readApiResponse<{
-        key_id: string;
-        amount: number;
-        currency: string;
-        order_id: string;
-        order_number: string;
-      }>(res);
+        });
+      } catch {
+        throw new Error(
+          API.includes("localhost")
+            ? "The shop cannot reach its payment server. The website is still pointing at localhost. In Vercel, set NEXT_PUBLIC_API_URL to your deployed API address (for example https://wickwell-api.onrender.com), then redeploy."
+            : `Cannot reach the payment server at ${API}. It may be asleep (wait a minute and try again) or down. Open ${API}/health in a new tab: it should show {"ok":true}. If it does, the API's ALLOWED_ORIGINS must include ${typeof window !== "undefined" ? window.location.origin : "this website"}.`
+        );
+      }
+      const order = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(typeof order.detail === "string" ? order.detail : `The payment server returned an error (${res.status}). Check the API logs on Render.`);
       if (!window.Razorpay) throw new Error("Payment window failed to load. Refresh and try again.");
 
-      const checkout = new window.Razorpay({
+      const rz = new window.Razorpay({
         key: order.key_id,
         amount: order.amount,
-        currency: order.currency,
+        currency: "INR",
         name: "WickWell",
         description: `Order #${order.order_number}`,
-        order_id: order.order_id,
+        order_id: order.razorpay_order_id,
         prefill: { name: get("name"), email: get("email"), contact: get("phone") },
         theme: { color: "#8c1d2e" },
         modal: { ondismiss: () => setBusy(false) },
-        handler: async (response: RazorpaySuccess) => {
-          try {
-            const verification = await fetch(`${API}/orders/verify`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(response),
-            });
-            await readApiResponse<{ ok: boolean; order_number: string }>(verification);
-            clear();
-            router.push(`/order/success?n=${order.order_number}`);
-          } catch (verificationError) {
-            const reason = verificationError instanceof Error ? ` ${verificationError.message}` : "";
-            setError(`Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.${reason}`);
+        handler: async (r: Record<string, string>) => {
+          const v = await fetch(`${API}/orders/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(r),
+          }).catch(() => null);
+          if (!v || !v.ok) {
+            setError("Payment received but we could not confirm it yet. Do not pay again; we will email you shortly.");
             setBusy(false);
+            return;
           }
+          clear();
+          router.push(`/order/success?n=${order.order_number}`);
         },
       });
-      checkout.on("payment.failed", (response) => {
-        setError(response.error?.description || "Payment failed. Please try again.");
+      rz.on?.("payment.failed", (r) => {
+        setError(`Payment failed: ${r?.error?.description ?? "please try again or use another payment method."}`);
         setBusy(false);
       });
-      checkout.open();
+      rz.open();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setBusy(false);
@@ -169,15 +109,7 @@ export default function CheckoutPage() {
 
   return (
     <main className="container-lume py-10 md:py-14">
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="afterInteractive"
-        onReady={() => setCheckoutLoaded(true)}
-        onError={() => {
-          setCheckoutLoaded(false);
-          setError("Secure checkout could not load. Check your connection and refresh the page.");
-        }}
-      />
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <h1 className="text-4xl sm:text-5xl">Checkout</h1>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
@@ -198,8 +130,8 @@ export default function CheckoutPage() {
 
           {error && <p role="alert" className="rounded-md bg-wine-600/10 px-4 py-3 text-sm text-wine-700">{error}</p>}
 
-          <button disabled={busy || !ready || !checkoutLoaded} className="btn-primary w-full disabled:opacity-50">
-            {busy ? "Opening payment…" : !checkoutLoaded ? "Loading secure checkout…" : `Pay ${rupees(subtotalPaise + shipping)}`}
+          <button disabled={busy || !ready} className="btn-primary w-full disabled:opacity-50">
+            {busy ? "Opening payment…" : `Pay ${rupees(subtotalPaise + shipping)}`}
           </button>
           <p className="text-center text-xs text-cocoa-600">Secure payment by Razorpay: UPI, cards, netbanking and wallets.</p>
         </form>
