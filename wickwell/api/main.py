@@ -11,10 +11,10 @@ The browser never decides prices or "paid" status. This service:
 """
 import hashlib
 import hmac
+import logging
 import os
 import re
 import time
-from pathlib import Path
 
 import razorpay
 from dotenv import load_dotenv
@@ -24,13 +24,40 @@ from pydantic import BaseModel, Field, field_validator
 from supabase import create_client
 
 load_dotenv()
-load_dotenv(Path(__file__).resolve().parents[1] / ".env.local")
 
-db = create_client(
-    os.environ.get("SUPABASE_URL") or os.environ["NEXT_PUBLIC_SUPABASE_URL"],
-    os.environ["SUPABASE_SERVICE_ROLE_KEY"],
-)
-rzp = razorpay.Client(auth=(os.environ["RAZORPAY_KEY_ID"], os.environ["RAZORPAY_KEY_SECRET"]))
+log = logging.getLogger("uvicorn.error")  # shows up in Render → Logs
+
+def env(name: str) -> str:
+    """Read a setting, forgiving stray spaces/quotes, with a message that says exactly what to fix."""
+    value = os.getenv(name, "").strip().strip("\"'").strip()
+    if not value:
+        raise RuntimeError(
+            f"Environment variable {name} is missing or empty. Add it in Render → your service → Environment "
+            f"(exact name, no quotes), then redeploy."
+        )
+    return value
+
+
+def supabase_url() -> str:
+    """Accepts 'xxxx.supabase.co', 'https://xxxx.supabase.co/' or a pasted '.../rest/v1/' link."""
+    url = env("SUPABASE_URL")
+    if "NEXT_PUBLIC" in url or " " in url:
+        raise RuntimeError("SUPABASE_URL looks wrong. It must be only the project URL, like https://abcdxyz.supabase.co")
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    url = url.rstrip("/")
+    for tail in ("/rest/v1", "/auth/v1"):
+        if url.endswith(tail):
+            url = url[: -len(tail)]
+    return url
+
+
+db = create_client(supabase_url(), env("SUPABASE_SERVICE_ROLE_KEY"))
+if "placeholder" in env("RAZORPAY_KEY_ID").lower() or "placeholder" in env("RAZORPAY_KEY_SECRET").lower():
+    log.warning("RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are still placeholders. Payments will fail until you add real Razorpay keys.")
+elif not env("RAZORPAY_KEY_ID").startswith(("rzp_test_", "rzp_live_")):
+    log.warning("RAZORPAY_KEY_ID should start with rzp_test_ or rzp_live_. Check that you copied the Key Id, not the Key Secret.")
+rzp = razorpay.Client(auth=(env("RAZORPAY_KEY_ID"), env("RAZORPAY_KEY_SECRET")))
 
 FREE_SHIPPING_ABOVE_PAISE = 99900  # keep in sync with lib/pricing.ts
 SHIPPING_PAISE = 9900
@@ -38,7 +65,7 @@ SHIPPING_PAISE = 9900
 app = FastAPI(title="WickWell API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "http://wick-well.vercel.app").split(",") if o.strip()],
+    allow_origins=[o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()],
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
@@ -81,9 +108,9 @@ class OrderIn(BaseModel):
 
 
 class VerifyIn(BaseModel):
-    razorpay_order_id: str | None = None
-    razorpay_payment_id: str | None = None
-    razorpay_signature: str | None = None
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
 
 
 # ───────── Helpers ─────────
@@ -132,10 +159,6 @@ def health():
 
 @app.post("/orders")
 def create_order(body: OrderIn, authorization: str | None = Header(default=None)):
-    user_id = user_id_from_token(authorization)
-    if authorization and not user_id:
-        raise HTTPException(401, "Invalid authorization token")
-
     # Merge duplicate variant lines, then price everything from the DB.
     qty: dict[str, int] = {}
     for i in body.items:
@@ -162,13 +185,11 @@ def create_order(body: OrderIn, authorization: str | None = Header(default=None)
 
     shipping = 0 if subtotal >= FREE_SHIPPING_ABOVE_PAISE else SHIPPING_PAISE
     total = subtotal + shipping
-    if total < 100:
-        raise HTTPException(400, "The minimum payment amount is ₹1.00.")
 
     order = (
         db.table("orders")
         .insert({
-            "user_id": user_id,
+            "user_id": user_id_from_token(authorization),
             "email": body.email.lower(),
             "subtotal_paise": subtotal,
             "shipping_paise": shipping,
@@ -191,45 +212,37 @@ def create_order(body: OrderIn, authorization: str | None = Header(default=None)
             "receipt": f"wickwell-{order['order_number']}",
             "notes": {"order_id": order["id"]},
         })
-    except Exception:
+    except Exception as e:
         db.table("orders").update({"status": "cancelled"}).eq("id", order["id"]).execute()
-        raise HTTPException(500, "Payment provider is unavailable. Please try again.")
+        reason = str(e)
+        log.error("Razorpay could not create the order (%s): %s", type(e).__name__, reason)
+        if "authentication" in reason.lower():
+            raise HTTPException(502, "Payment could not be started: Razorpay rejected this shop's keys. The owner must check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on the server.")
+        if isinstance(e, razorpay.errors.BadRequestError):
+            raise HTTPException(502, f"Payment could not be started: {reason}")
+        raise HTTPException(502, "Payment provider is unavailable. Please try again in a moment.")
 
     db.table("orders").update({"razorpay_order_id": r["id"]}).eq("id", order["id"]).execute()
     return {
-        "order_id": r["id"],
+        "order_id": order["id"],
         "order_number": order["order_number"],
         "razorpay_order_id": r["id"],
         "amount": total,
-        "currency": r["currency"],
-        "key_id": os.environ["RAZORPAY_KEY_ID"],
+        "key_id": env("RAZORPAY_KEY_ID"),
     }
 
 
 @app.post("/orders/verify")
 def verify(body: VerifyIn):
-    order_id = body.razorpay_order_id
-    payment_id = body.razorpay_payment_id
-    signature = body.razorpay_signature
-    if order_id is None or not order_id.strip():
-        raise HTTPException(400, "razorpay_order_id is required.")
-    if payment_id is None or not payment_id.strip():
-        raise HTTPException(400, "razorpay_payment_id is required.")
-    if signature is None or not signature.strip():
-        raise HTTPException(400, "razorpay_signature is required.")
-
-    expected = hmac.new(
-        os.environ["RAZORPAY_KEY_SECRET"].encode(),
-        f"{order_id}|{payment_id}".encode(),
-        hashlib.sha256,
-    ).hexdigest()
-    if not hmac.compare_digest(expected, signature):
+    try:
+        rzp.utility.verify_payment_signature(body.model_dump())
+    except razorpay.errors.SignatureVerificationError:
         raise HTTPException(400, "Payment signature invalid")
 
-    rows = db.table("orders").select("*").eq("razorpay_order_id", order_id).execute().data
+    rows = db.table("orders").select("*").eq("razorpay_order_id", body.razorpay_order_id).execute().data
     if not rows:
         raise HTTPException(404, "Order not found")
-    mark_paid(rows[0], payment_id)
+    mark_paid(rows[0], body.razorpay_payment_id)
     return {"ok": True, "order_number": rows[0]["order_number"]}
 
 
@@ -238,7 +251,7 @@ async def webhook(request: Request, x_razorpay_signature: str = Header(default="
     """Safety net if the customer closes the tab right after paying.
     Dashboard → Webhooks → URL: https://<your-api>/webhooks/razorpay, event: payment.captured"""
     raw = await request.body()
-    expected = hmac.new(os.environ["RAZORPAY_WEBHOOK_SECRET"].encode(), raw, hashlib.sha256).hexdigest()
+    expected = hmac.new(env("RAZORPAY_WEBHOOK_SECRET").encode(), raw, hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, x_razorpay_signature):
         raise HTTPException(400, "Bad signature")
 
